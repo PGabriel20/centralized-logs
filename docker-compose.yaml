@@ -42,10 +42,55 @@ services:
     networks:
       - laravel
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.9.0
+    container_name: elasticsearch
+    environment:
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      discovery.type: single-node
+      xpack.security.enabled: false
+    ports:
+      - "9200:9200"
+    networks:
+      - laravel
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.9.0
+    container_name: logstash
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    ports:
+      - "5044:5044"
+    networks:
+      - laravel
+    volumes:
+      - ./.docker/logstash/config:/usr/share/logstash/config
+      - ./.docker/logstash/pipeline:/usr/share/logstash/pipeline
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.9.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    networks:
+      - laravel
+    depends_on:
+      - elasticsearch
+
 networks:
   laravel:
     driver: bridge
 
 volumes:
   postgres-data:
+    driver: local
+  elasticsearch-data:
     driver: local
